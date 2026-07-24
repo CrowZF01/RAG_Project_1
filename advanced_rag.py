@@ -4,14 +4,14 @@ from dotenv import load_dotenv
 
 #env load
 load_dotenv()
-
 api_key = os.getenv("GOOGLE_API_KEY")
 if not api_key:
-    print("ERROR: API Key not found in file .env!")
+    print("❌ ERROR: GOOGLE_API_KEY tidak ditemukan di file .env!")
     sys.exit(1)
 
-from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext
-from llama_index.core import Settings
+# Import modul LlamaIndex & ChromaDB
+from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext, Settings
+from llama_index.core.node_parser import MarkdownNodeParser
 from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
 from llama_index.llms.google_genai import GoogleGenAI
 import chromadb
@@ -20,23 +20,22 @@ from llama_index.vector_stores.chroma import ChromaVectorStore
 print("Starting VulnCopilot (markdown chunking)")
 
 #konfig model
-print("Menyiapkan Model")
+print("📦 Menyiapkan Model Gemini...")
 embed_model = GoogleGenAIEmbedding(
     model_name="gemini-embedding-2-preview", api_key=api_key
 )
 llm = GoogleGenAI(model="gemini-flash-latest", api_key=api_key)
-
 Settings.embed_model = embed_model
 Settings.llm = llm
 
 #dokumen reading
-print("Memuat dokumen dari folder ./data")
+print("📄 Membaca dokumen dari folder ./data ...")
 data_path = os.path.join(os.path.dirname(__file__), "data")
 documents = SimpleDirectoryReader(data_path).load_data()
 
 #Chungking: MarkDownNodeParser
 print("Running MarkDownNodeParser by header markdown")
-parser = MarkDownNodeParser()
+parser = MarkdownNodeParser()
 nodes = parser.get_nodes_from_documents(documents)
 print(f"✅ Dokumen berhasil dipotong menjadi {len(nodes)} nodes/chunks terstruktur!")
 
