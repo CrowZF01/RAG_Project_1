@@ -16,6 +16,7 @@ from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
 from llama_index.llms.google_genai import GoogleGenAI
 import chromadb
 from llama_index.vector_stores.chroma import ChromaVectorStore
+from llama_index.core.vector_stores import MetadataFilters, ExactMatchFilter
 
 print("Starting VulnCopilot (markdown chunking)")
 
@@ -39,6 +40,30 @@ parser = MarkdownNodeParser()
 nodes = parser.get_nodes_from_documents(documents)
 print(f"✅ Dokumen berhasil dipotong menjadi {len(nodes)} nodes/chunks terstruktur!")
 
+# 5. Metadata Enrichment (Step 2 Feature)
+print("🏷️ Menambahkan Tag Metadata (Category, CWE ID, Severity)...")
+for node in nodes:
+    header_path = str(node.metadata.get("header_path", "")).lower()
+    content = node.get_content().lower()
+    
+    if "a01" in header_path or "access control" in content:
+        node.metadata["category"] = "Access Control"
+        node.metadata["cwe_id"] = "CWE-200"
+        node.metadata["severity"] = "High"
+    elif "a02" in header_path or "crypto" in content:
+        node.metadata["category"] = "Cryptography"
+        node.metadata["cwe_id"] = "CWE-311"
+        node.metadata["severity"] = "Critical"
+    elif "a03" in header_path or "injection" in content:
+        node.metadata["category"] = "Injection"
+        node.metadata["cwe_id"] = "CWE-89"
+        node.metadata["severity"] = "Critical"
+    else:
+        node.metadata["category"] = "General Security"
+        node.metadata["cwe_id"] = "CWE-General"
+        node.metadata["severity"] = "Medium"
+print(f"✅ Dokumen berhasil dipotong menjadi {len(nodes)} nodes dengan Metadata!")
+
 #PREVIEW 2 NODE PERTAMA
 print("\n" + "="*50)
 print("🔍 Preview Hasil Node/Chunking:")
@@ -53,15 +78,19 @@ print("="*50 + "\n")
 print("💾 Menyimpan Nodes ke Database Vektor (ChromaDB)...")
 db_path = os.path.join(os.path.dirname(__file__), "chroma_db")
 db = chromadb.PersistentClient(path=db_path)
-chroma_collection = db.get_or_create_collection("vuln_copilot_kb_v2")
+chroma_collection = db.get_or_create_collection("vuln_copilot_kb_v3")
 vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
 storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
 #Indexing nodes
 index = VectorStoreIndex(nodes, storage_context=storage_context)
 print("Indexing to ChromaDB finished!")
-#query open
-query_engine = index.as_query_engine(similiarity_top_k=3)
+#open Query Engine dengan filter kategori (Misal: Hanya kategori 'Injection')
+print("🔒 Mengaktifkan Query Engine dengan Metadata Filter: [category = 'Injection']")
+injection_filter = MetadataFilters(
+    filters=[ExactMatchFilter(key="category", value="Injection")]
+)
+query_engine = index.as_query_engine(similarity_top_k=3, filters=injection_filter)
 
 # 8. Interactive CLI Loop
 print("\n" + "="*50)
