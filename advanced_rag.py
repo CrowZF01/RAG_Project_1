@@ -10,6 +10,7 @@ if not api_key:
     sys.exit(1)
 
 # Import modul LlamaIndex & ChromaDB
+from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext, Settings, PromptTemplate
 from llama_index.core.node_parser import MarkdownNodeParser
 from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
@@ -86,9 +87,9 @@ storage_context = StorageContext.from_defaults(vector_store=vector_store)
 index = VectorStoreIndex(nodes, storage_context=storage_context)
 print("Indexing to ChromaDB finished!")
 
-#open Query Engine with prompt
-print("🎯 Menyiapkan DevSecOps System Prompt Template...")
-qa_prompt_tmpl = PromptTemplate(
+# Prompt template khusus untuk Chat Engine
+memory = ChatMemoryBuffer.from_defaults(token_limit=3000)
+chat_context_prompt = (
     "Anda adalah seorang Senior DevSecOps & Application Security Specialist (VulnCopilot).\n"
     "Gunakan konteks dokumen referensi keamanan berikut untuk menganalisis dan menjawab pertanyaan:\n"
     "---------------------\n"
@@ -103,14 +104,14 @@ qa_prompt_tmpl = PromptTemplate(
     "<Berikan rekomendasi perbaikan dan contoh kode jika ada di dokumen>\n\n"
     "📚 4. Referensi:\n"
     "<Sebutkan sumber referensi dari dokumen yang dirujuk>\n\n"
-    "Jika informasi tidak terdapat pada dokumen referensi, sampaikan dengan jujur bahwa informasi tidak tersedia di Knowledge Base.\n\n"
-    "Pertanyaan: {query_str}\n"
-    "Jawaban VulnCopilot:"
+    "Jika informasi tidak terdapat pada dokumen referensi, sampaikan dengan jujur bahwa informasi tidak tersedia di Knowledge Base."
 )
-# Mengaktifkan Query Engine dengan DevSecOps System Prompt
-query_engine = index.as_query_engine(
+chat_engine = index.as_chat_engine(
+    chat_mode="condense_plus_context",
+    memory=memory,
     similarity_top_k=3,
-    text_qa_template=qa_prompt_tmpl
+    context_prompt=chat_context_prompt,
+    verbose=False
 )
 
 # 8. Interactive CLI Loop
@@ -127,7 +128,7 @@ while True:
             continue
         
         print("\n🔍 Mencari referensi keamanan & menganalisis...")
-        response = query_engine.query(user_query)
+        response = chat_engine.chat(user_query)
         print("\n🤖 Respon VulnCopilot:\n")
         print(response)
         print("\n" + "-"*50 + "\n")
