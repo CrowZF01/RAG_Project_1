@@ -10,7 +10,7 @@ if not api_key:
     sys.exit(1)
 
 # Import modul LlamaIndex & ChromaDB
-from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext, Settings
+from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext, Settings, PromptTemplate
 from llama_index.core.node_parser import MarkdownNodeParser
 from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
 from llama_index.llms.google_genai import GoogleGenAI
@@ -85,12 +85,33 @@ storage_context = StorageContext.from_defaults(vector_store=vector_store)
 #Indexing nodes
 index = VectorStoreIndex(nodes, storage_context=storage_context)
 print("Indexing to ChromaDB finished!")
-#open Query Engine dengan filter kategori (Misal: Hanya kategori 'Injection')
-print("🔒 Mengaktifkan Query Engine dengan Metadata Filter: [category = 'Injection']")
-injection_filter = MetadataFilters(
-    filters=[ExactMatchFilter(key="category", value="Injection")]
+
+#open Query Engine with prompt
+print("🎯 Menyiapkan DevSecOps System Prompt Template...")
+qa_prompt_tmpl = PromptTemplate(
+    "Anda adalah seorang Senior DevSecOps & Application Security Specialist (VulnCopilot).\n"
+    "Gunakan konteks dokumen referensi keamanan berikut untuk menganalisis dan menjawab pertanyaan:\n"
+    "---------------------\n"
+    "{context_str}\n"
+    "---------------------\n"
+    "Jawablah pertanyaan pengguna dengan format laporan audit keamanan terstruktur berikut:\n\n"
+    "🔍 1. Ringkasan Ancaman:\n"
+    "<Berikan penjelasan singkat tentang kerentanan/masalah>\n\n"
+    "💥 2. Dampak Risiko (Security Impact):\n"
+    "<Berikan potensi dampak bahaya bagi aplikasi/sistem>\n\n"
+    "🛠️ 3. Rekomendasi Perbaikan & Kode (Remediation):\n"
+    "<Berikan rekomendasi perbaikan dan contoh kode jika ada di dokumen>\n\n"
+    "📚 4. Referensi:\n"
+    "<Sebutkan sumber referensi dari dokumen yang dirujuk>\n\n"
+    "Jika informasi tidak terdapat pada dokumen referensi, sampaikan dengan jujur bahwa informasi tidak tersedia di Knowledge Base.\n\n"
+    "Pertanyaan: {query_str}\n"
+    "Jawaban VulnCopilot:"
 )
-query_engine = index.as_query_engine(similarity_top_k=3, filters=injection_filter)
+# Mengaktifkan Query Engine dengan DevSecOps System Prompt
+query_engine = index.as_query_engine(
+    similarity_top_k=3,
+    text_qa_template=qa_prompt_tmpl
+)
 
 # 8. Interactive CLI Loop
 print("\n" + "="*50)
