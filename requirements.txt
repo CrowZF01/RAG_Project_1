@@ -4,3 +4,5 @@ llama-index-embeddings-google-genai
 llama-index-vector-stores-chroma
 chromadb
 python-dotenv
+fastapi
+uvicorn
