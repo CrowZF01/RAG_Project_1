@@ -9,7 +9,7 @@ api_key = os.getenv("GOOGLE_API_KEY")
 if not api_key:
     raise ValueError("GOOGLE_API_KEY not found in .env file")
 
-from llma_index.core import(
+from llama_index.core import(
     SimpleDirectoryReader,
     VectorStoreIndex,
     StorageContext,
@@ -115,7 +115,7 @@ class VulnCopilotRAG:
             raise RuntimeError("RAG Engine belum diinisialisasi!")
         response = self.chat_engine.chat(message)
         return str(response)
-        
+
     def reset_memory(self):
         if self.chat_engine and hasattr(self.chat_engine, "memory"):
             self.chat_engine.memory.reset()

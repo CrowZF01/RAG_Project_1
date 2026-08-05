@@ -11,3 +11,8 @@ __pycache__/
 .pytest_cache/
 
 ciao.md
+
+# Node / React Frontend
+node_modules/
+frontend/node_modules/
+dist/
