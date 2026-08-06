@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
@@ -54,6 +55,19 @@ def chat_endpoint(request: ChatRequest):
         return ChatResponse(response=reply, status="success")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gagal memproses query RAG: {str(e)}")
+
+@app.post("/chat-stream")
+def chat_stream_endpoint(request: ChatRequest):
+    if not request.message or not request.message.strip():
+        raise HTTPException(status_code=400, detail="Pesan tidak boleh kosong.")
+    
+    try:
+        return StreamingResponse(
+            rag_app.stream_query(request.message),
+            media_type="text/plain"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gagal memproses query RAG stream: {str(e)}")
 @app.post("/reset-session")
 def reset_session():
     if rag_app and rag_app.reset_memory():

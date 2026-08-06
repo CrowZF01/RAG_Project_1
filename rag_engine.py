@@ -116,8 +116,26 @@ class VulnCopilotRAG:
         response = self.chat_engine.chat(message)
         return str(response)
 
+    def stream_query(self, message: str):
+        if not self.chat_engine:
+            raise RuntimeError("RAG Engine belum diinisialisasi!")
+        response_stream = self.chat_engine.stream_chat(message)
+        for token in response_stream.response_gen:
+            yield token
+
     def reset_memory(self):
-        if self.chat_engine and hasattr(self.chat_engine, "memory"):
-            self.chat_engine.memory.reset()
-            return True
+        if self.chat_engine:
+            try:
+                if hasattr(self.chat_engine, "reset"):
+                    self.chat_engine.reset()
+                    return True
+                elif hasattr(self.chat_engine, "_memory"):
+                    self.chat_engine._memory.reset()
+                    return True
+                elif hasattr(self.chat_engine, "memory"):
+                    self.chat_engine.memory.reset()
+                    return True
+            except Exception as e:
+                print(f"Error resetting memory: {e}")
+                return False
         return False

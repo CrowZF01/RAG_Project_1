@@ -11,6 +11,8 @@ __pycache__/
 .pytest_cache/
 
 ciao.md
+ide_project_couple_rag.md
+uji_pemahaman_rag.md
 
 # Node / React Frontend
 node_modules/
