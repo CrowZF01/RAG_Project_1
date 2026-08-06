@@ -24,14 +24,13 @@
 
 ## 🏗️ System Architecture
 
-```mermaid
-graph TD
-    A[💻 React 18 UI] -->|1. POST /chat-stream| B[🚀 FastAPI Server]
-    B -->|2. Semantic Query| C[💾 ChromaDB Vector Store]
-    C -->|3. Top-K Relevant Context| D[🧠 LlamaIndex Engine]
-    D -->|4. Augmented Prompt + Memory| E[☁️ Google Gemini API]
-    E -->|5. Token Stream Generator| B
-    B -->|6. HTTP StreamingResponse| A
+```text
+[ React 18 UI ] <─── (HTTP Streaming) ───> [ FastAPI Backend ]
+                                                 │
+                           ┌─────────────────────┴─────────────────────┐
+                           ▼                                           ▼
+                [ ChromaDB Vector Store ]                    [ Google Gemini API ]
+                (Knowledge Base Search)                       (Generates AI Stream)
 ```
 
 ---
